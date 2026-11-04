@@ -49,6 +49,7 @@ export default defineSchema({
     imageStorageId: v.optional(v.id("_storage")),
     sortOrder: v.number(),
     active: v.boolean(),
+    isDemo: v.optional(v.boolean()),
     createdAt: v.number(),
     updatedAt: v.number(),
   })
@@ -64,6 +65,7 @@ export default defineSchema({
     imageStorageIds: v.array(v.id("_storage")),
     basePriceCents: v.number(),
     active: v.boolean(),
+    isDemo: v.optional(v.boolean()),
     featured: v.boolean(),
     archived: v.optional(v.boolean()),
     weightGrams: v.number(),
@@ -97,6 +99,7 @@ export default defineSchema({
     packageWidthCm: v.optional(v.number()),
     packageHeightCm: v.optional(v.number()),
     active: v.boolean(),
+    isDemo: v.optional(v.boolean()),
   })
     .index("by_product", ["productId"])
     .index("by_sku", ["sku"]),
@@ -109,6 +112,7 @@ export default defineSchema({
     imageStorageIds: v.array(v.id("_storage")),
     sortOrder: v.number(),
     active: v.boolean(),
+    isDemo: v.optional(v.boolean()),
     archived: v.optional(v.boolean()),
     compatibleProductIds: v.array(v.id("products")),
     compatibleVariantIds: v.optional(v.array(v.id("productVariants"))),

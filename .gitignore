@@ -3,7 +3,6 @@ dist
 .env
 .env.local
 .env.*.local
-convex/_generated
 *.log
 .DS_Store
 .vercel

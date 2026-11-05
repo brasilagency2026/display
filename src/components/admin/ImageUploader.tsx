@@ -9,7 +9,13 @@ export interface AdminImage {
   url: string;
 }
 
-const ALLOWED = ["image/jpeg", "image/png", "image/webp"];
+const ALLOWED = ["image/jpeg", "image/png", "image/webp", "image/avif"];
+
+/** Certains systèmes ne renseignent pas le type MIME des .avif : on le déduit de l'extension. */
+function mimeOf(file: File): string {
+  if (file.type) return file.type;
+  return file.name.toLowerCase().endsWith(".avif") ? "image/avif" : "";
+}
 const MAX_BYTES = 5 * 1024 * 1024;
 
 interface Props {
@@ -36,7 +42,7 @@ export function ImageUploader({ images, onChange, max }: Props) {
       return;
     }
     for (const file of files) {
-      if (!ALLOWED.includes(file.type)) return setError("Use imagens JPG, PNG ou WebP.");
+      if (!ALLOWED.includes(mimeOf(file))) return setError("Use imagens JPG, PNG, WebP ou AVIF.");
       if (file.size > MAX_BYTES) return setError("Cada imagem deve ter no máximo 5 MB.");
     }
 
@@ -47,7 +53,7 @@ export function ImageUploader({ images, onChange, max }: Props) {
         const uploadUrl = await generateUploadUrl();
         const response = await fetch(uploadUrl, {
           method: "POST",
-          headers: { "Content-Type": file.type },
+          headers: { "Content-Type": mimeOf(file) },
           body: file,
         });
         if (!response.ok) throw new Error("upload");
@@ -99,7 +105,7 @@ export function ImageUploader({ images, onChange, max }: Props) {
           {busy ? "Enviando…" : "Adicionar imagens"}
           <input type="file" accept={ALLOWED.join(",")} multiple className="sr-only" onChange={onFiles} disabled={busy || images.length >= max} />
         </label>
-        <p className="mt-1 text-xs text-slate-500">JPG, PNG ou WebP, até 5 MB cada. A primeira é a imagem principal.</p>
+        <p className="mt-1 text-xs text-slate-500">JPG, PNG, WebP ou AVIF, até 5 MB cada. Prefira AVIF ou WebP com cerca de 1200 a 1600 px de largura. A primeira é a imagem principal.</p>
       </div>
       {error && <p className="text-sm text-red-700" role="alert">{error}</p>}
     </div>

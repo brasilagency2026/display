@@ -35,7 +35,7 @@ Ensuite, `/admin` est accessible (reconnexion éventuelle).
 - **Prix** : prix final = prix base + ajustement de l'option + supplément du design. Les montants se saisissent en reais (`49,90`) et sont stockés en centavos. Le serveur recalcule toujours les prix.
 - **Produit sans option** : vendu au prix base. Dès qu'une option existe, le client doit en choisir une.
 - **Stock** : « Controlar estoque » désactivé = pas de limite. Seuil d'alerte par option (5 par défaut).
-- **Images** : JPG, PNG ou WebP, 5 Mo max, 10 par produit. Type et taille sont revérifiés côté serveur. La première image est la principale. Une image retirée est supprimée du stockage à l'enregistrement.
+- **Images** : JPG, PNG, WebP ou AVIF, 5 Mo max, 10 par produit. Pour la rapidité, préférer AVIF ou WebP d'environ 1200 à 1600 px de large : les images sont servies telles quelles, sans redimensionnement. Type et taille sont revérifiés côté serveur. La première image est la principale. Une image retirée est supprimée du stockage à l'enregistrement.
 - **Frete** : le supplément (5,00 au départ) est ajouté une fois par commande. Seuls Correios PAC et SEDEX seront proposés.
 - **Données DEMO** : marquées « DEMO ». Suppression : `npx convex run seed:removeDemo [--prod]`.
 

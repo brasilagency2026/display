@@ -2,9 +2,9 @@ import type { Id } from "../_generated/dataModel";
 import type { MutationCtx } from "../_generated/server";
 import { fail } from "./validate";
 
-export const ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"];
+export const ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp", "image/avif"];
 export const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
-export const IMAGE_ERROR = "Imagem inválida. Use JPG, PNG ou WebP de até 5 MB.";
+export const IMAGE_ERROR = "Imagem inválida. Use JPG, PNG, WebP ou AVIF de até 5 MB.";
 
 export async function isValidImage(ctx: MutationCtx, id: Id<"_storage">): Promise<boolean> {
   const meta = await ctx.db.system.get(id);

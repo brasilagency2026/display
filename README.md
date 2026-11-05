@@ -6,16 +6,16 @@ Boutique e-commerce brésilienne (interface en PT-BR). Cahier des charges : voir
 
 React 19 + Vite + TypeScript + Tailwind CSS 4 · Convex (backend, base de données, auth) · Vercel (frontend statique).
 
-## État actuel — Phase 0 (fondations)
+## État actuel
 
 Fonctionne :
-- Frontend Vite/React/Tailwind, routes de base, formats BRL / CEP / dates `dd/mm/aaaa`
-- Build statique (`dist/`) compatible Vercel, avec réécriture SPA (`vercel.json`)
-- Schéma Convex complet (catalogue, designs admin-only, commandes à 3 statuts séparés, paiements, expéditions, QR/NFC, affiliés, Mercado Livre, audit)
-- Contrôle d'accès centralisé côté backend (`convex/access.ts`)
-- Logique de livraison PAC/SEDEX + supplément configurable (`shared/shipping.ts`) avec tests
+- Boutique PT-BR : accueil, loja (recherche, catégories, tri), fiche produit (options + designs prédéfinis), panier recalculé côté serveur, connexion/inscription, compte
+- Administration `/admin` : produits, options/variantes, stock, catégories, designs, images, paramètres de la boutique et du frete (voir `docs/ADMIN_GUIDE.md`)
+- Schéma Convex complet, contrôle d'accès centralisé, journal d'audit
+- Règles de prix et de livraison PAC/SEDEX + supplément configurable, avec tests (`npm test`)
+- Build statique Vercel + déploiement Convex automatique (`vercel.json`, variable `CONVEX_DEPLOY_KEY`)
 
-Pas encore fait (phases suivantes) : pages catalogue/panier/checkout, administration, appels réels Melhor Envio, Mercado Pago, affiliation, Mercado Livre. Rien n'est simulé comme « réel » : ces modules attendent leurs identifiants.
+Pas encore fait : checkout, appels réels Melhor Envio, Mercado Pago, commandes/production QR-NFC, affiliation, Mercado Livre. Ces modules attendent leurs identifiants ; rien n'est simulé comme « réel ».
 
 ## Démarrage local
 

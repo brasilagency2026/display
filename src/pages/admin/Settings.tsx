@@ -1,11 +1,12 @@
 import { useState } from "react";
 import type { FormEvent } from "react";
-import { useMutation, useQuery } from "convex/react";
+import { useAction, useMutation, useQuery } from "convex/react";
+import { useSearchParams } from "react-router-dom";
 import type { FunctionReturnType } from "convex/server";
 import { api } from "../../../convex/_generated/api";
-import { Button, Checkbox, Field, Notice, PageHeader, inputClass } from "../../components/admin/ui";
+import { Badge, Button, Checkbox, Field, Notice, PageHeader, inputClass } from "../../components/admin/ui";
 import { errorMessage } from "../../lib/errors";
-import { formatCEP } from "../../lib/format";
+import { formatCEP, formatDate } from "../../lib/format";
 import { centsToInput, parseBRL } from "../../../shared/money";
 
 type Settings = FunctionReturnType<typeof api.settings.getAdminSettings>;
@@ -93,10 +94,75 @@ function ShippingForm({ initial }: { initial: Settings["shipping"] }) {
         <Checkbox id="f-pac" checked={enablePac} onChange={setEnablePac}>Ativar PAC</Checkbox>
         <Checkbox id="f-sedex" checked={enableSedex} onChange={setEnableSedex}>Ativar SEDEX</Checkbox>
       </div>
-      <Notice kind="info">O token do Melhor Envio não é configurado aqui: ele ficará nos segredos do Convex (próxima fase).</Notice>
+      <p className="text-xs text-slate-500">A conexão com a conta Melhor Envio está no quadro abaixo.</p>
       {message && <Notice kind={message.kind}>{message.text}</Notice>}
       <Button type="submit" disabled={saving}>{saving ? "Salvando…" : "Salvar"}</Button>
     </form>
+  );
+}
+
+function MelhorEnvioCard() {
+  const status = useQuery(api.melhorEnvio.status);
+  const start = useAction(api.melhorEnvio.startAuthorization);
+  const [params] = useSearchParams();
+  const result = params.get("melhorenvio");
+  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  if (status === undefined) return null;
+  const ready = status.credentialsConfigured && status.contactEmailConfigured;
+
+  async function connect() {
+    setError(null);
+    setBusy(true);
+    try {
+      window.location.assign(await start());
+    } catch (e) {
+      setError(errorMessage(e));
+      setBusy(false);
+    }
+  }
+
+  const yesNo = (ok: boolean) => <Badge tone={ok ? "green" : "amber"}>{ok ? "Sim" : "Pendente"}</Badge>;
+
+  return (
+    <section className="space-y-4 rounded-xl border border-slate-200 bg-white p-5">
+      <div className="flex items-center justify-between gap-3">
+        <h2 className="text-lg font-semibold">Melhor Envio</h2>
+        <Badge tone={status.environment === "production" ? "green" : "amber"}>
+          {status.environment === "production" ? "Produção" : "Sandbox (testes)"}
+        </Badge>
+      </div>
+
+      {result === "ok" && <Notice kind="success">Conta Melhor Envio conectada.</Notice>}
+      {result === "erro" && <Notice kind="error">Não foi possível concluir a conexão. Tente novamente.</Notice>}
+      {status.mock && <Notice kind="info">Modo de simulação ativo (SHIPPING_MOCK): os fretes exibidos são fictícios.</Notice>}
+
+      <ul className="space-y-2 text-sm">
+        <li className="flex justify-between"><span>Client ID e Secret nos segredos do Convex</span>{yesNo(status.credentialsConfigured)}</li>
+        <li className="flex justify-between"><span>E-mail de contato da loja (exigido pela API)</span>{yesNo(status.contactEmailConfigured)}</li>
+        <li className="flex justify-between"><span>Conta conectada</span>{yesNo(status.connected)}</li>
+        {status.connected && status.tokenExpiresAt && (
+          <li className="flex justify-between text-slate-600">
+            <span>Token válido até</span>
+            <span>{formatDate(status.tokenExpiresAt)} (renovado automaticamente)</span>
+          </li>
+        )}
+      </ul>
+
+      {status.redirectUri && (
+        <div className="space-y-1">
+          <p className="text-sm font-medium">URL de callback a cadastrar no aplicativo Melhor Envio</p>
+          <code className="block break-all rounded bg-slate-100 p-2 text-xs">{status.redirectUri}</code>
+        </div>
+      )}
+
+      {error && <Notice kind="error">{error}</Notice>}
+      <Button onClick={() => void connect()} disabled={!ready || busy}>
+        {busy ? "Redirecionando…" : status.connected ? "Reconectar ao Melhor Envio" : "Conectar ao Melhor Envio"}
+      </Button>
+      {!ready && <p className="text-xs text-slate-500">Conclua os itens pendentes acima antes de conectar. Guia: docs/SHIPPING_MELHOR_ENVIO.md.</p>}
+    </section>
   );
 }
 
@@ -109,6 +175,7 @@ export default function SettingsPage() {
       <div className="space-y-8">
         <StoreForm initial={settings.store} />
         <ShippingForm initial={settings.shipping} />
+        <MelhorEnvioCard />
       </div>
     </div>
   );

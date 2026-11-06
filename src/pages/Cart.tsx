@@ -1,7 +1,10 @@
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { ImageBox } from "../components/ImageBox";
+import { ShippingQuote } from "../components/ShippingQuote";
+import type { SelectedShipping } from "../components/ShippingQuote";
 import { useTitle } from "../hooks/useTitle";
 import { useCart } from "../lib/cart";
 import { formatBRL } from "../lib/format";
@@ -10,6 +13,7 @@ import { MAX_QUANTITY } from "../../shared/pricing";
 export default function Cart() {
   useTitle("Carrinho");
   const cart = useCart();
+  const [shipping, setShipping] = useState<SelectedShipping | null>(null);
   const priced = useQuery(api.catalog.priceCart, cart.items.length > 0 ? { items: cart.items } : "skip");
 
   if (cart.items.length === 0) {
@@ -86,9 +90,19 @@ export default function Cart() {
               <span>Subtotal</span>
               <span className="font-semibold">{formatBRL(priced.subtotalCents)}</span>
             </div>
-            <p className="text-sm text-slate-500">
-              O frete (Correios PAC ou SEDEX) é calculado na finalização do pedido.
-            </p>
+            <ShippingQuote items={cart.items} disabled={hasProblem} onSelect={setShipping} />
+            {shipping && (
+              <>
+                <div className="flex justify-between text-sm">
+                  <span>Frete (Correios {shipping.service})</span>
+                  <span>{formatBRL(shipping.priceCents)}</span>
+                </div>
+                <div className="flex justify-between border-t border-slate-200 pt-3 font-semibold">
+                  <span>Total</span>
+                  <span>{formatBRL(priced.subtotalCents + shipping.priceCents)}</span>
+                </div>
+              </>
+            )}
             <button
               type="button"
               disabled

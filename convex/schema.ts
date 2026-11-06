@@ -234,7 +234,12 @@ export default defineSchema({
     deliveryDays: v.optional(v.number()),
     expiresAt: v.number(),
     createdAt: v.number(),
-  }).index("by_cart", ["cartRef"]),
+    // Empreinte du panier + règles de frais : permet de réutiliser une cotation encore valide.
+    fingerprint: v.optional(v.string()),
+    isMock: v.optional(v.boolean()),
+  })
+    .index("by_cart", ["cartRef"])
+    .index("by_fingerprint", ["fingerprint", "expiresAt"]),
 
   shipments: defineTable({
     orderId: v.id("orders"),
@@ -360,6 +365,26 @@ export default defineSchema({
     createdBy: v.optional(v.id("users")),
     createdAt: v.number(),
   }).index("by_product", ["productId", "createdAt"]),
+
+  // Jetons OAuth Melhor Envio. Table réservée au serveur : aucune fonction publique ne la lit ni ne la renvoie.
+  // (Les jetons tournent tous les 30 jours : ils ne peuvent pas vivre dans les variables d'environnement.)
+  integrationTokens: defineTable({
+    provider: v.literal("melhor_envio"),
+    environment: v.string(),
+    accessToken: v.string(),
+    refreshToken: v.string(),
+    expiresAt: v.number(),
+    scope: v.optional(v.string()),
+    updatedAt: v.number(),
+  }).index("by_provider", ["provider"]),
+
+  // Valeur « state » de l'autorisation OAuth : usage unique, durée courte.
+  oauthStates: defineTable({
+    provider: v.literal("melhor_envio"),
+    state: v.string(),
+    createdBy: v.id("users"),
+    expiresAt: v.number(),
+  }).index("by_state", ["state"]),
 
   // Paramètres publics non sensibles uniquement.
   settings: defineTable({

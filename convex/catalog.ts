@@ -1,29 +1,12 @@
 import { v } from "convex/values";
 import { query } from "./_generated/server";
 import type { QueryCtx } from "./_generated/server";
-import type { Doc, Id } from "./_generated/dataModel";
-import {
-  isDesignCompatible,
-  isValidQuantity,
-  lineTotalCents,
-  unitPriceCents,
-} from "../shared/pricing";
-
-async function imageUrls(ctx: QueryCtx, ids: Id<"_storage">[]): Promise<string[]> {
-  const urls = await Promise.all(ids.map((id) => ctx.storage.getUrl(id)));
-  return urls.filter((u): u is string => u !== null);
-}
+import type { Doc } from "./_generated/dataModel";
+import { activeVariants, imageUrls, priceCartLines } from "./lib/cart";
+import { unitPriceCents } from "../shared/pricing";
 
 function normalize(text: string): string {
   return text.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
-}
-
-async function activeVariants(ctx: QueryCtx, productId: Id<"products">) {
-  const variants = await ctx.db
-    .query("productVariants")
-    .withIndex("by_product", (q) => q.eq("productId", productId))
-    .collect();
-  return variants.filter((variant) => variant.active);
 }
 
 function variantInStock(product: Doc<"products">, variant: Doc<"productVariants">): boolean {
@@ -179,8 +162,6 @@ export const getProduct = query({
   },
 });
 
-const MAX_CART_LINES = 50;
-
 /**
  * Recalcule le panier côté serveur : le frontend n'envoie que des identifiants et des quantités,
  * jamais de prix. Les lignes invalides sont signalées et exclues du sous-total.
@@ -197,89 +178,14 @@ export const priceCart = query({
     ),
   },
   handler: async (ctx, args) => {
-    const items = args.items.slice(0, MAX_CART_LINES);
-    const lines = [];
-    let subtotalCents = 0;
-
-    for (const item of items) {
-      const productId = ctx.db.normalizeId("products", item.productId);
-      const variantId = item.variantId ? ctx.db.normalizeId("productVariants", item.variantId) : null;
-      const designId = item.designId ? ctx.db.normalizeId("designs", item.designId) : null;
-      const base = {
-        productId: item.productId,
-        variantId: item.variantId ?? null,
-        designId: item.designId ?? null,
-        quantity: item.quantity,
-      };
-      const invalid = (problem: string) => ({
-        ...base,
-        name: "Produto indisponível",
-        variantName: null,
-        designName: null,
-        imageUrl: null,
-        unitPriceCents: 0,
-        lineTotalCents: 0,
-        problem,
-      });
-
-      const product = productId ? await ctx.db.get(productId) : null;
-      if (!product || !product.active || product.archived) {
-        lines.push(invalid("Este produto não está mais disponível."));
-        continue;
-      }
-      if (!isValidQuantity(item.quantity)) {
-        lines.push({ ...invalid("Quantidade inválida."), name: product.name });
-        continue;
-      }
-
-      const variants = await activeVariants(ctx, product._id);
-      const variant = variantId ? (variants.find((candidate) => candidate._id === variantId) ?? null) : null;
-      let problem: string | null = null;
-
-      if (variants.length > 0 && !variant) problem = "Escolha uma opção válida para este produto.";
-      if (!problem && variant && product.stockManaged && variant.stockQuantity < item.quantity) {
-        problem = "Estoque insuficiente para a quantidade escolhida.";
-      }
-
-      let design: Doc<"designs"> | null = null;
-      if (!problem && designId) {
-        design = await ctx.db.get(designId);
-        const usable =
-          design &&
-          design.active &&
-          !design.archived &&
-          design.compatibleProductIds.includes(product._id) &&
-          isDesignCompatible(
-            {
-              supportedTechnologies: design.supportedTechnologies,
-              compatibleVariantIds: (design.compatibleVariantIds ?? []).map(String),
-            },
-            variant ? { id: variant._id, technology: variant.options.technology } : null,
-          );
-        if (!usable) problem = "O design escolhido não está mais disponível.";
-      }
-
-      const unit = unitPriceCents({
-        basePriceCents: product.basePriceCents,
-        variantAdjustmentCents: variant?.priceAdjustmentCents,
-        designAdjustmentCents: design?.priceAdjustmentCents,
-      });
-      const total = problem ? 0 : lineTotalCents(unit, item.quantity);
-      subtotalCents += total;
-
-      const [image] = await imageUrls(ctx, (design?.imageStorageIds ?? product.imageStorageIds).slice(0, 1));
-      lines.push({
-        ...base,
-        name: product.name,
-        variantName: variant?.name ?? null,
-        designName: design?.name ?? null,
-        imageUrl: image ?? null,
-        unitPriceCents: unit,
-        lineTotalCents: total,
-        problem,
-      });
-    }
-
-    return { lines, subtotalCents };
+    const { lines, subtotalCents } = await priceCartLines(ctx, args.items, { withImages: true });
+    return {
+      lines: lines.map((line) => {
+        const { physical, ...publicLine } = line;
+        void physical; // poids/dimensions : usage interne (frete), jamais renvoyés au navigateur
+        return publicLine;
+      }),
+      subtotalCents,
+    };
   },
 });

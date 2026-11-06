@@ -1,28 +1,10 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
-import type { MutationCtx, QueryCtx } from "./_generated/server";
+import type { MutationCtx } from "./_generated/server";
 import { requireAdmin } from "./access";
 import { audit } from "./lib/audit";
 import { assertInt, cleanText, fail, optionalText } from "./lib/validate";
-import { DEFAULT_SHIPPING_MARKUP_CENTS } from "../shared/shipping";
-
-// Paramètres NON sensibles uniquement. Les secrets (Mercado Pago, Melhor Envio…) vivent dans les variables Convex.
-
-const DEFAULT_STORE = { storeName: "", contactEmail: "", whatsapp: "", instagram: "", address: "" };
-const DEFAULT_SHIPPING = {
-  originCep: "",
-  markupCents: DEFAULT_SHIPPING_MARKUP_CENTS,
-  enablePac: true,
-  enableSedex: true,
-};
-
-async function readSetting<T extends object>(ctx: QueryCtx | MutationCtx, key: string, defaults: T): Promise<T> {
-  const row = await ctx.db
-    .query("settings")
-    .withIndex("by_key", (q) => q.eq("key", key))
-    .unique();
-  return { ...defaults, ...(row?.value as Partial<T> | undefined) };
-}
+import { DEFAULT_SHIPPING, DEFAULT_STORE, readSetting } from "./lib/settings";
 
 async function writeSetting(ctx: MutationCtx, key: string, value: object) {
   const row = await ctx.db

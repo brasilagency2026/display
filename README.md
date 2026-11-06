@@ -13,9 +13,10 @@ Fonctionne :
 - Administration `/admin` : produits, options/variantes, stock, catégories, designs, images, paramètres de la boutique et du frete (voir `docs/ADMIN_GUIDE.md`)
 - Schéma Convex complet, contrôle d'accès centralisé, journal d'audit
 - Règles de prix et de livraison PAC/SEDEX + supplément configurable, avec tests (`npm test`)
+- Frete Melhor Envio : cotation Correios PAC/SEDEX côté serveur avec supplément configurable, connexion OAuth et renouvellement automatique du token (`docs/SHIPPING_MELHOR_ENVIO.md`) — à valider en sandbox avec un compte
 - Build statique Vercel + déploiement Convex automatique (`vercel.json`, variable `CONVEX_DEPLOY_KEY`)
 
-Pas encore fait : checkout, appels réels Melhor Envio, Mercado Pago, commandes/production QR-NFC, affiliation, Mercado Livre. Ces modules attendent leurs identifiants ; rien n'est simulé comme « réel ».
+Pas encore fait : checkout, achat d'étiquettes Melhor Envio, Mercado Pago, commandes/production QR-NFC, affiliation, Mercado Livre. Ces modules attendent leurs identifiants ; rien n'est simulé comme « réel ».
 
 ## Démarrage local
 
